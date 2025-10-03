@@ -6,12 +6,11 @@ import dotenv from 'dotenv';
 import { transcribeWithGemini } from './ai-support.js';
 import { uploadToGCS } from './storage_gcs.js';
 import { toASLGlossGemini } from './gemini_client.js';
-import { exec } from 'child_process';
+import youtubedl from 'youtube-dl-exec';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 
 dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -46,55 +45,34 @@ app.get('/yt',async (req, res)=>{
 }
 
 const outputPath = path.join(__dirname, "downloads", "%(title)s.%(ext)s");
-// const cmd = `yt-dlp --cookies-from-browser chrome -f "bv*+ba/b" --merge-output-format mp4 -o "${outputPath}" "${videoUrl}"`
-const cmd = `yt-dlp --cookies-from-browser chrome -f "bv*+ba/b" \
-    --merge-output-format mp4 \
-    -o "${outputPath}" \
-    --print after_move:filepath \
-    "${videoUrl}"`;
 try {
-    let finalPath = "";
-new Promise((resolve, reject) => {
-    exec(cmd, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`❌ Error: ${error.message}`);
-            return reject(error);
-        }
-        if (stderr) {
-            console.warn(`⚠️ stderr: ${stderr}`);
-        }
-        const pathOut = stdout.trim().split("\n").pop();
-        console.log("✅ Final downloaded file:", pathOut);
-        resolve(pathOut);
-    });
-})
-.then(async (fp) => {
-    
-let finalPath =fp || extractFilePath(fp);
-console.log("final path is : ", fp);
-    const ans =await transcript(finalPath);
-    // resolve(ans);
-    console.log(ans)
-    return ans;
-})
-.then(response => {
-    console.log("transcription done");
-    res.json({ response });
-})
-.catch(error => {
-    console.log("error in yt-dlp exec : ", error);
-    res.status(500).send("Download failed");
-});
+    // call the packaged binary via the npm wrapper
+    const ytdlOptions = {
+      cookiesFromBrowser: 'chrome',
+      f: 'bv*+ba/b',
+      mergeOutputFormat: 'mp4',
+      o: outputPath,
+      print: 'after_move:filepath'
+    };
 
-   
+    const stdout = await youtubedl(videoUrl, ytdlOptions);
+    const pathOut = (typeof stdout === 'string' ? stdout.trim().split("\n").pop() : null) || extractFilePath(String(stdout || ''));
+    if (!pathOut) {
+      console.error("❌ Could not determine downloaded file path from youtube-dl output:", stdout);
+      return res.status(500).send("Download succeeded but final filepath not found");
+    }
+    console.log("✅ Final downloaded file:", pathOut);
+
+    const finalPath = pathOut;
+    const ans = await transcript(finalPath);
+    console.log(ans);
+    console.log("transcription done");
+    res.json({ response: ans });
+
 } catch (error) {
     console.log("error in yt-dlp exec : ", error);
     res.status(500).send("Download failed");
 }
- 
-  
-
-
 })
 
 app.post("/transcribe", upload.single('video'), async (req, res)=>{
