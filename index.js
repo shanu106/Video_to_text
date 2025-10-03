@@ -39,6 +39,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/yt',async (req, res)=>{
+    console.log("yt api called ");
     const videoUrl = req.query.url;
      if (!videoUrl) {
     return res.status(400).send("Missing ?url= parameter");
