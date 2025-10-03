@@ -48,12 +48,22 @@ app.get('/yt',async (req, res)=>{
 const outputPath = path.join(__dirname, "downloads", "%(title)s.%(ext)s");
 try {
     // call the packaged binary via the npm wrapper
+   const fs = await import('fs');
+    const cookiesPath = path.join(__dirname, 'cookies.txt');
+
     const ytdlOptions = {
       format: 'bv*+ba/b',
       mergeOutputFormat: 'mp4',
       output: outputPath,
       print: 'after_move:filepath'
     };
+
+    if (fs.existsSync(cookiesPath)) {
+      ytdlOptions.cookies = cookiesPath; // youtube-dl accepts a cookies file via --cookies
+      console.log(`Using cookies from ${cookiesPath}`);
+    } else {
+      console.warn(`cookies.txt not found at ${cookiesPath}; proceeding without cookies`);
+    }
 
     const stdout = await youtubedl(videoUrl, ytdlOptions);
     const pathOut = (typeof stdout === 'string' ? stdout.trim().split("\n").pop() : null) || extractFilePath(String(stdout || ''));
