@@ -49,10 +49,9 @@ const outputPath = path.join(__dirname, "downloads", "%(title)s.%(ext)s");
 try {
     // call the packaged binary via the npm wrapper
     const ytdlOptions = {
-      cookiesFromBrowser: 'chrome',
-      f: 'bv*+ba/b',
+      format: 'bv*+ba/b',
       mergeOutputFormat: 'mp4',
-      o: outputPath,
+      output: outputPath,
       print: 'after_move:filepath'
     };
 
