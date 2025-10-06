@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
 
 const storage = multer.diskStorage({
     destination:function (req, file, cb){
@@ -143,5 +143,5 @@ function extractFilePath(logLine) {
 
 
 app.listen(PORT, () => {
-    console.log(`Server listening on http://localhost:${PORT}`);
+    console.log(`Server listening on :${PORT}`);
 });
